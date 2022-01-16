@@ -169,7 +169,7 @@ class BasicAnnotationExtractor:
     def get_annotations(self, raw_embedding: ndarray) -> BasicExtractedAnnotations:
         secstruct = self.get_secondary_structure(raw_embedding)
         subcell = self.get_subcellular_location(raw_embedding)
-
+        print("Howdy")
         return BasicExtractedAnnotations(disorder=secstruct.disorder, DSSP8=secstruct.DSSP8,
                                          DSSP3=secstruct.DSSP3, localization=subcell.localization,
                                          membrane=subcell.membrane, disorder_raw=secstruct.disorder_raw,
