@@ -56,9 +56,9 @@ _disorder_labels = {
 BasicSecondaryStructureResult = collections.namedtuple('BasicSecondaryStructureResult', 'DSSP3 DSSP8 disorder '
                                                                                         'DSSP3_raw DSSP8_raw disorder_raw')
 SubcellularLocalizationAndMembraneBoundness = collections.namedtuple('SubcellularLocalizationAndMembraneBoundness',
-                                                                     'localization membrane')
+                                                                     'localization membrane localization_raw membrane_raw')
 BasicExtractedAnnotations = collections.namedtuple('BasicExtractedAnnotations', 'DSSP3 DSSP8 disorder DSSP3_raw '
-                                                                                'DSSP8_raw disorder_raw localization membrane')
+                                                                                'DSSP8_raw disorder_raw localization membrane localization_raw membrane_raw')
 
 
 class BasicAnnotationExtractor:
@@ -133,8 +133,9 @@ class BasicAnnotationExtractor:
         pred_loc = _location_labels[
             torch.max(yhat_loc, dim=1)[1].item()]  # get index of output node with max. activation,
         pred_mem = _membrane_labels[torch.max(yhat_mem, dim=1)[1].item()]  # this corresponds to the predicted class
-
-        return SubcellularLocalizationAndMembraneBoundness(localization=pred_loc, membrane=pred_mem)
+        pred_subcell_raw = torch.softmax(yhat_loc, dim=1)[0]
+        pred_mem_raw = torch.softmax(yhat_mem, dim=1)[0]
+        return SubcellularLocalizationAndMembraneBoundness(localization=pred_loc, membrane=pred_mem, localization_raw=pred_subcell_raw, membrane_raw=pred_mem_raw)
 
     def get_secondary_structure(self, raw_embedding: ndarray) -> BasicSecondaryStructureResult:
         raw_embedding = raw_embedding.astype(numpy.float32)  # For T5 fp16
@@ -169,11 +170,10 @@ class BasicAnnotationExtractor:
     def get_annotations(self, raw_embedding: ndarray) -> BasicExtractedAnnotations:
         secstruct = self.get_secondary_structure(raw_embedding)
         subcell = self.get_subcellular_location(raw_embedding)
-        print("Howdy")
         return BasicExtractedAnnotations(disorder=secstruct.disorder, DSSP8=secstruct.DSSP8,
                                          DSSP3=secstruct.DSSP3, localization=subcell.localization,
                                          membrane=subcell.membrane, disorder_raw=secstruct.disorder_raw,
-                                         DSSP3_raw=secstruct.DSSP3_raw, DSSP8_raw=secstruct.DSSP8_raw)
+                                         DSSP3_raw=secstruct.DSSP3_raw, DSSP8_raw=secstruct.DSSP8_raw, localization_raw=subcell.localization_raw, membrane_raw=subcell.membrane_raw)
 
     @staticmethod
     def _class2label(label_dict: Dict[int, Any], yhat: torch.tensor) -> List[Any]:
